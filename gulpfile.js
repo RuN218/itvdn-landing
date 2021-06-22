@@ -20,6 +20,7 @@ const newer        = require('gulp-newer')
 const rsync        = require('gulp-rsync')
 const del          = require('del')
 const pug          = require('gulp-pug')
+const spritesmith  = require('gulp.spritesmith');
 
 function browsersync() {
 	browserSync.init({
@@ -86,6 +87,19 @@ function images() {
 		.pipe(browserSync.stream())
 }
 
+/* ------------ Sprite ------------- */
+function sprite(cb) {
+	const spriteData = src('app/images/src/icons/*.png').pipe(spritesmith({
+		imgName: 'sprite.png',
+		imgPath: '../images/dist/sprite.png',
+		cssName: 'sprite.scss'
+	}));
+
+	spriteData.img.pipe(dest('app/images/dist'));
+	spriteData.css.pipe(dest(`app/styles/${preprocessor}/global`));
+	cb();
+}
+
 function buildcopy() {
 	return src([
 		'{app/js,app/css}/*.min.*',
@@ -129,6 +143,7 @@ exports.scripts = scripts
 exports.styles  = styles
 exports.images  = images
 exports.deploy  = deploy
-exports.assets  = series(templates, scripts, styles, images)
-exports.build   = series(cleandist, templates, scripts, styles, images, buildcopy)
-exports.default = series(templates, scripts, styles, images, parallel(browsersync, startwatch))
+exports.sprite  = sprite
+exports.assets  = series(templates, scripts, styles, images, sprite)
+exports.build   = series(cleandist, templates, scripts, styles, images, sprite, buildcopy)
+exports.default = series(templates, scripts, styles, images, sprite, parallel(browsersync, startwatch))
